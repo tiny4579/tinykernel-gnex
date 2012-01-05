@@ -603,4 +603,10 @@ config VIBRATOR_CONTROL
 	help
 	  Say Y here to enable Vibrator Control
 
+config BLX
+	bool "Support for Battery Life eXtender"
+	default y
+	help
+	  Say Y here to enable Battery Life eXtender
+
 endif # MISC_DEVICES
