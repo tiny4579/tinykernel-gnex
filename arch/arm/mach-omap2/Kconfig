@@ -399,4 +399,11 @@ config FORCE_FAST_CHARGE
 	  A simple sysfs interface to force adapters that
 	  are detected as USB to charge as AC.
 
+config OMAP_OVERRIDE_MPUTRIM
+	bool "Override factory-set trim value for MPU DPLL clock"
+	default n
+	help
+	  Override factory-set trim value for MPU DPLL to allow locking at 
+	  rates >2.4GHz (required for MPU frequencies >1.2GHz).
+
 endif
