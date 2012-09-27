@@ -69,6 +69,9 @@ static bool omap_cpufreq_ready;
 static bool omap_cpufreq_suspended;
 
 static int oc_val;
+#ifdef CONFIG_CPU_FREQ_GOV_INTELLIDEMAND
+extern bool lmf_screen_state;
+#endif
 
 static unsigned int omap_getspeed(unsigned int cpu)
 {
@@ -271,6 +274,9 @@ static void omap_cpu_early_suspend(struct early_suspend *h)
 
 	mutex_lock(&omap_cpufreq_lock);
 
+#ifdef CONFIG_CPU_FREQ_GOV_INTELLIDEMAND
+	lmf_screen_state = false;
+#endif
 	if (screen_off_max_freq) {
 		max_capped = screen_off_max_freq;
 
@@ -288,6 +294,9 @@ static void omap_cpu_late_resume(struct early_suspend *h)
 
 	mutex_lock(&omap_cpufreq_lock);
 
+#ifdef CONFIG_CPU_FREQ_GOV_INTELLIDEMAND
+	lmf_screen_state = true;
+#endif
 	if (max_capped) {
 		max_capped = 0;
 
