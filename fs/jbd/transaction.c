@@ -1944,10 +1944,26 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
 		}
 		/*
 		 * The buffer is committing, we simply cannot touch
-		 * it. So we just set j_next_transaction to the
-		 * running transaction (if there is one) and mark
-		 * buffer as freed so that commit code knows it should
-		 * clear dirty bits when it is done with the buffer.
+		 * it. If the page is straddling i_size we have to wait
+		 * for commit and try again.
+		 */
+		if (partial_page) {
+			tid_t tid = journal->j_committing_transaction->t_tid;
+
+			journal_put_journal_head(jh);
+			spin_unlock(&journal->j_list_lock);
+			jbd_unlock_bh_state(bh);
+			spin_unlock(&journal->j_state_lock);
+			unlock_buffer(bh);
+			log_wait_commit(journal, tid);
+			lock_buffer(bh);
+			goto retry;
+		}
+		/*
+		 * OK, buffer won't be reachable after truncate. We just set
+		 * j_next_transaction to the running transaction (if there is
+		 * one) and mark buffer as freed so that commit code knows it
+		 * should clear dirty bits when it is done with the buffer.
 		 */
 		set_buffer_freed(bh);
 		if (journal->j_running_transaction && buffer_jbddirty(bh))
