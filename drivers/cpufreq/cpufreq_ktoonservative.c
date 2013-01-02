@@ -33,6 +33,7 @@
 #define DEF_FREQUENCY_UP_THRESHOLD_HOTPLUG	(68)
 #define DEF_FREQUENCY_DOWN_THRESHOLD		(52)
 #define DEF_FREQUENCY_DOWN_THRESHOLD_HOTPLUG	(35)
+#define DEF_CPU_DOWN_BLOCK_CYCLES		(0)
 
 /*
  * The polling frequency of this governor depends on the capability of
@@ -47,6 +48,7 @@
 #define MIN_SAMPLING_RATE_RATIO			(2)
 
 static unsigned int min_sampling_rate;
+static unsigned int Lcpu_down_block_cycles = 0;
 
 #define LATENCY_MULTIPLIER			(1000)
 #define MIN_LATENCY_MULTIPLIER			(100)
@@ -92,6 +94,7 @@ static struct dbs_tuners {
 	unsigned int up_threshold_hotplug;
 	unsigned int down_threshold;
 	unsigned int down_threshold_hotplug;
+	unsigned int cpu_down_block_cycles;
 	unsigned int ignore_nice;
 	unsigned int freq_step;
 } dbs_tuners_ins = {
@@ -99,6 +102,7 @@ static struct dbs_tuners {
 	.up_threshold_hotplug = DEF_FREQUENCY_UP_THRESHOLD_HOTPLUG,
 	.down_threshold = DEF_FREQUENCY_DOWN_THRESHOLD,
 	.down_threshold_hotplug = DEF_FREQUENCY_DOWN_THRESHOLD_HOTPLUG,
+	.cpu_down_block_cycles = DEF_CPU_DOWN_BLOCK_CYCLES,
 	.sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
 	.ignore_nice = 0,
 	.freq_step = 5,
@@ -191,6 +195,7 @@ show_one(up_threshold, up_threshold);
 show_one(up_threshold_hotplug, up_threshold_hotplug);
 show_one(down_threshold, down_threshold);
 show_one(down_threshold_hotplug, down_threshold_hotplug);
+show_one(cpu_down_block_cycles, cpu_down_block_cycles);
 show_one(ignore_nice_load, ignore_nice);
 show_one(freq_step, freq_step);
 
@@ -285,6 +290,21 @@ static ssize_t store_down_threshold_hotplug(struct kobject *a, struct attribute 
 	return count;
 }
 
+static ssize_t store_cpu_down_block_cycles(struct kobject *a, struct attribute *b,
+				    const char *buf, size_t count)
+{
+	unsigned int input;
+	int ret;
+	ret = sscanf(buf, "%u", &input);
+
+	/* cannot be lower than 11 otherwise freq will not fall */
+	if (input < 0)
+		return -EINVAL;
+
+	dbs_tuners_ins.cpu_down_block_cycles = input;
+	return count;
+}
+
 static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
 				      const char *buf, size_t count)
 {
@@ -342,6 +362,7 @@ define_one_global_rw(up_threshold);
 define_one_global_rw(up_threshold_hotplug);
 define_one_global_rw(down_threshold);
 define_one_global_rw(down_threshold_hotplug);
+define_one_global_rw(cpu_down_block_cycles);
 define_one_global_rw(ignore_nice_load);
 define_one_global_rw(freq_step);
 
@@ -353,6 +374,7 @@ static struct attribute *dbs_attributes[] = {
 	&up_threshold_hotplug.attr,
 	&down_threshold.attr,
 	&down_threshold_hotplug.attr,
+	&cpu_down_block_cycles.attr,
 	&ignore_nice_load.attr,
 	&freq_step.attr,
 	NULL
@@ -469,7 +491,19 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 	if (max_load < (dbs_tuners_ins.down_threshold_hotplug)) {
 		if (num_online_cpus() > 1)
-			schedule_work_on(0, &hotplug_offline_work);
+		{
+			if (Lcpu_down_block_cycles > dbs_tuners_ins.cpu_down_block_cycles)
+			{
+				schedule_work_on(0, &hotplug_offline_work);
+				Lcpu_down_block_cycles = 0;
+			}
+			Lcpu_down_block_cycles++;
+			//printk(KERN_ERR "CPU_DOWN %d - %d\n", max_load, dbs_tuners_ins.down_threshold_hotplug);
+			//if (!(delayed_work_pending(&hotplug_offline_work)))
+			//{
+			//}
+			//cpu_down(1);
+		}
 	}
 
 	/*
