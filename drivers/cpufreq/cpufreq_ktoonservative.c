@@ -54,6 +54,9 @@ static unsigned int min_sampling_rate;
 #define MAX_SAMPLING_DOWN_FACTOR		(10)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
 
+struct work_struct hotplug_offline_work;
+struct work_struct hotplug_online_work;
+
 static void do_dbs_timer(struct work_struct *work);
 
 struct cpu_dbs_info_s {
@@ -438,7 +441,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	/* Check for frequency increase is greater than hotplug value */
 	if (max_load > dbs_tuners_ins.up_threshold_hotplug) {
 		if (num_online_cpus() < 2)
-			cpu_up(1);
+			schedule_work_on(0, &hotplug_online_work);
 	}
 
 	/* Check for frequency increase */
@@ -466,7 +469,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 	if (max_load < (dbs_tuners_ins.down_threshold_hotplug)) {
 		if (num_online_cpus() > 1)
-			cpu_down(1);
+			schedule_work_on(0, &hotplug_offline_work);
 	}
 
 	/*
@@ -490,6 +493,32 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		__cpufreq_driver_target(policy, this_dbs_info->requested_freq,
 				CPUFREQ_RELATION_H);
 		return;
+	}
+}
+
+static void hotplug_offline_work_fn(struct work_struct *work)
+{
+	int cpu;
+	//pr_info("ENTER OFFLINE");
+	for_each_online_cpu(cpu) {
+		if (likely(cpu_online(cpu) && (cpu))) {
+			cpu_down(cpu);
+			//pr_info("auto_hotplug: CPU%d down.\n", cpu);
+			break;
+		}
+	}
+}
+
+static void hotplug_online_work_fn(struct work_struct *work)
+{
+	int cpu;
+	//pr_info("ENTER ONLINE");
+	for_each_possible_cpu(cpu) {
+		if (likely(!cpu_online(cpu) && (cpu))) {
+			cpu_up(cpu);
+			//pr_info("auto_hotplug: CPU%d up.\n", cpu);
+			break;
+		}
 	}
 }
 
@@ -651,6 +680,9 @@ struct cpufreq_governor cpufreq_gov_ktoonservative = {
 
 static int __init cpufreq_gov_dbs_init(void)
 {
+	INIT_WORK(&hotplug_offline_work, hotplug_offline_work_fn);
+	INIT_WORK(&hotplug_online_work, hotplug_online_work_fn);
+	
 	return cpufreq_register_governor(&cpufreq_gov_ktoonservative);
 }
 
