@@ -49,6 +49,9 @@
 
 static unsigned int min_sampling_rate;
 static unsigned int Lcpu_down_block_cycles = 0;
+static bool boostpulse_relayf = false;
+static unsigned int boostpulse_relay_sr = 0;
+static unsigned int Lboostpulse_value = 1000000;
 
 #define LATENCY_MULTIPLIER			(1000)
 #define MIN_LATENCY_MULTIPLIER			(100)
@@ -178,6 +181,12 @@ static ssize_t show_sampling_rate_min(struct kobject *kobj,
 				      struct attribute *attr, char *buf)
 {
 	return sprintf(buf, "%u\n", min_sampling_rate);
+}
+
+static ssize_t show_boostpulse_value(struct kobject *kobj,
+				      struct attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", Lboostpulse_value / 1000);
 }
 
 define_one_global_ro(sampling_rate_min);
@@ -356,6 +365,23 @@ static ssize_t store_freq_step(struct kobject *a, struct attribute *b,
 	return count;
 }
 
+static ssize_t store_boostpulse_value(struct kobject *a, struct attribute *b,
+			       const char *buf, size_t count)
+{
+	unsigned int input;
+	int ret;
+	ret = sscanf(buf, "%u", &input);
+
+	if (ret != 1)
+		return -EINVAL;
+
+	if (input * 1000 > 2100000)
+		input = 2100000;
+
+	Lboostpulse_value = input * 1000;
+	return count;
+}
+
 define_one_global_rw(sampling_rate);
 define_one_global_rw(sampling_down_factor);
 define_one_global_rw(up_threshold);
@@ -365,6 +391,7 @@ define_one_global_rw(down_threshold_hotplug);
 define_one_global_rw(cpu_down_block_cycles);
 define_one_global_rw(ignore_nice_load);
 define_one_global_rw(freq_step);
+define_one_global_rw(boostpulse_value);
 
 static struct attribute *dbs_attributes[] = {
 	&sampling_rate_min.attr,
@@ -377,6 +404,7 @@ static struct attribute *dbs_attributes[] = {
 	&cpu_down_block_cycles.attr,
 	&ignore_nice_load.attr,
 	&freq_step.attr,
+	&boostpulse_value.attr,
 	NULL
 };
 
@@ -398,6 +426,21 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 	policy = this_dbs_info->cur_policy;
 
+	if (boostpulse_relayf)
+	{
+		this_dbs_info->down_skip = 0;
+		/* if we are already at full speed then break out early */
+		if (this_dbs_info->requested_freq == policy->max)
+			return;
+
+		this_dbs_info->requested_freq = Lboostpulse_value;
+		__cpufreq_driver_target(policy, this_dbs_info->requested_freq,
+			CPUFREQ_RELATION_H);
+		dbs_tuners_ins.sampling_rate = boostpulse_relay_sr;
+		boostpulse_relayf = false;
+		return;
+	}
+	
 	/*
 	 * Every sampling_rate, we check, if current idle time is less
 	 * than 20% (default), then we try to increase frequency
@@ -530,6 +573,19 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	}
 }
 
+extern void ktoonservative_is_active(bool val);
+
+void boostpulse_relay()
+{
+	if (Lboostpulse_value > 0)
+	{
+		//pr_info("BOOST_PULSE_FROM_INTERACTIVE");
+		boostpulse_relay_sr = dbs_tuners_ins.sampling_rate;
+		boostpulse_relayf = true;
+		dbs_tuners_ins.sampling_rate = min_sampling_rate;
+	}
+}
+
 static void hotplug_offline_work_fn(struct work_struct *work)
 {
 	int cpu;
@@ -604,6 +660,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 
 	switch (event) {
 	case CPUFREQ_GOV_START:
+		ktoonservative_is_active(true);
 		if ((!cpu_online(cpu)) || (!policy->cur))
 			return -EINVAL;
 
@@ -663,6 +720,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		break;
 
 	case CPUFREQ_GOV_STOP:
+		ktoonservative_is_active(false);
 		dbs_timer_exit(this_dbs_info);
 
 		mutex_lock(&dbs_mutex);
