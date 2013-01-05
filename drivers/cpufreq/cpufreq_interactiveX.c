@@ -34,7 +34,6 @@
 #include <linux/slab.h>
 #include <asm/cputime.h>
 
-#define CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
 
 static atomic_t active_count = ATOMIC_INIT(0);
