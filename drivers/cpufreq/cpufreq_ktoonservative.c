@@ -580,7 +580,8 @@ void boostpulse_relay(void)
 	if (Lboostpulse_value > 0)
 	{
 		//pr_info("BOOST_PULSE_FROM_INTERACTIVE");
-		boostpulse_relay_sr = dbs_tuners_ins.sampling_rate;
+		if (dbs_tuners_ins.sampling_rate != min_sampling_rate)
+			boostpulse_relay_sr = dbs_tuners_ins.sampling_rate;
 		boostpulse_relayf = true;
 		dbs_tuners_ins.sampling_rate = min_sampling_rate;
 	}
