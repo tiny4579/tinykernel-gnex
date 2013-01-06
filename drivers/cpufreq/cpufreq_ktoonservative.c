@@ -428,6 +428,8 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 	if (boostpulse_relayf)
 	{
+		dbs_tuners_ins.sampling_rate = boostpulse_relay_sr;
+		boostpulse_relayf = false;
 		this_dbs_info->down_skip = 0;
 		/* if we are already at full speed then break out early */
 		if (this_dbs_info->requested_freq == policy->max)
@@ -436,8 +438,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		this_dbs_info->requested_freq = Lboostpulse_value;
 		__cpufreq_driver_target(policy, this_dbs_info->requested_freq,
 			CPUFREQ_RELATION_H);
-		dbs_tuners_ins.sampling_rate = boostpulse_relay_sr;
-		boostpulse_relayf = false;
 		return;
 	}
 	
