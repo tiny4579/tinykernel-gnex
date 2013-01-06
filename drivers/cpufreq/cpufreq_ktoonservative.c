@@ -49,6 +49,7 @@
 
 static unsigned int min_sampling_rate;
 static unsigned int Lcpu_down_block_cycles = 0;
+static unsigned int Lcpu_up_block_cycles = 0;
 static bool boostpulse_relayf = false;
 static unsigned int boostpulse_relay_sr = 0;
 static unsigned int Lboostpulse_value = 1000000;
@@ -507,7 +508,14 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	/* Check for frequency increase is greater than hotplug value */
 	if (max_load > dbs_tuners_ins.up_threshold_hotplug) {
 		if (num_online_cpus() < 2)
-			schedule_work_on(0, &hotplug_online_work);
+		{
+			if (Lcpu_up_block_cycles > dbs_tuners_ins.cpu_down_block_cycles)
+			{
+				schedule_work_on(0, &hotplug_online_work);
+				Lcpu_up_block_cycles = 0;
+			}
+			Lcpu_up_block_cycles++;
+		}
 	}
 
 	/* Check for frequency increase */
@@ -549,7 +557,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			//cpu_down(1);
 		}
 	}
-
 	/*
 	 * The optimal frequency is the frequency that is the lowest that
 	 * can support the current CPU usage without triggering the up
