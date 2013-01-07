@@ -434,7 +434,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		boostpulse_relayf = false;
 		this_dbs_info->down_skip = 0;
 		/* if we are already at full speed then break out early */
-		if (this_dbs_info->requested_freq == policy->max)
+		if (this_dbs_info->requested_freq == policy->max || policy->cur > Lboostpulse_value || this_dbs_info->requested_freq > Lboostpulse_value)
 			return;
 
 		this_dbs_info->requested_freq = Lboostpulse_value;
