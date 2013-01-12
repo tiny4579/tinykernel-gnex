@@ -429,14 +429,12 @@ struct cpu_usage_history *hotplug_histories;
 static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
 						  cputime64_t *wall)
 {
-	cputime64_t idle_time;
-	cputime64_t cur_wall_time;
-	cputime64_t busy_time;
+	cputime64_t idle_time, cur_wall_time, busy_time = 0;
 
 	cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
 
-	busy_time  = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.user);
-	busy_time  = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.system);
+	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.user);
+	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.system);
 	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.irq);
 	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.softirq);
 	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.steal);
@@ -622,7 +620,7 @@ static ssize_t store_sampling_down_factor(struct kobject *a,
 					  struct attribute *b,
 					  const char *buf, size_t count)
 {
-	unsigned int input, j;
+	unsigned int input;
 	int ret;
 	ret = sscanf(buf, "%u", &input);
 
@@ -880,7 +878,7 @@ static ssize_t store_sampling_up_factor(struct kobject *a,
 					  struct attribute *b,
 					  const char *buf, size_t count)
 {
-	unsigned int input, j;
+	unsigned int input;
 	int ret;
 	ret = sscanf(buf, "%u", &input);
 
@@ -1436,33 +1434,6 @@ static inline void dbs_timer_exit(struct cpufreq_nightmare_cpuinfo *dbs_info)
 	cancel_work_sync(&dbs_info->down_work);
 }
 
-static int pm_notifier_call(struct notifier_block *this,
-			    unsigned long event, void *ptr)
-{
-	static unsigned int prev_hotplug_lock;
-	switch (event) {
-	case PM_SUSPEND_PREPARE:
-		prev_hotplug_lock = atomic_read(&g_hotplug_lock);
-		atomic_set(&g_hotplug_lock, 1);
-		apply_hotplug_lock();
-		pr_debug("%s enter suspend\n", __func__);
-		return NOTIFY_OK;
-	case PM_POST_RESTORE:
-	case PM_POST_SUSPEND:
-		atomic_set(&g_hotplug_lock, prev_hotplug_lock);
-		if (prev_hotplug_lock)
-			apply_hotplug_lock();
-		prev_hotplug_lock = 0;
-		pr_debug("%s exit suspend\n", __func__);
-		return NOTIFY_OK;
-	}
-	return NOTIFY_DONE;
-}
-
-static struct notifier_block pm_notifier = {
-	.notifier_call = pm_notifier_call,
-};
-
 static int reboot_notifier_call(struct notifier_block *this,
 				unsigned long code, void *_cmd)
 {
@@ -1515,7 +1486,6 @@ static int cpufreq_governor_nightmare(struct cpufreq_policy *policy,
 {
 	unsigned int cpu = policy->cpu;
 	struct cpufreq_nightmare_cpuinfo *this_dbs_info;
-	struct cpufreq_frequency_table *freq_table;
 	unsigned int j;
 	int rc;
 
