@@ -87,7 +87,7 @@ static int __init init_rq_avg(void)
 	}
 	spin_lock_init(&rq_data->lock);
 	rq_data->update_rate = RQ_AVG_TIMER_RATE;
-	INIT_DEFERRABLE_WORK(&rq_data->work, rq_work_fn);
+	INIT_DELAYED_WORK_DEFERRABLE(&rq_data->work, rq_work_fn);
 
 	return 0;
 }
@@ -426,20 +426,21 @@ struct cpu_usage_history {
 
 struct cpu_usage_history *hotplug_histories;
 
-static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
+static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
+						  cputime64_t *wall)
 {
-	u64 idle_time;
-	u64 cur_wall_time;
-	u64 busy_time;
+	cputime64_t idle_time;
+	cputime64_t cur_wall_time;
+	cputime64_t busy_time;
 
 	cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
 
-	busy_time  = kcpustat_cpu(cpu).cpustat[CPUTIME_USER];
-	busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_SYSTEM];
-	busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_IRQ];
-	busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_SOFTIRQ];
-	busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_STEAL];
-	busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_NICE];
+	busy_time  = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.user);
+	busy_time  = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.system);
+	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.irq);
+	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.softirq);
+	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.steal);
+	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.nice);
 
 	idle_time = cur_wall_time - busy_time;
 	if (wall)
@@ -659,7 +660,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
 		dbs_info->prev_cpu_idle =
 			get_cpu_idle_time(j, &dbs_info->prev_cpu_wall);
 		if (dbs_tuners_ins.ignore_nice)
-			dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+			dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat.nice;
 	}
 	return count;
 }
@@ -1269,11 +1270,11 @@ static void dbs_check_cpu(struct cpufreq_nightmare_cpuinfo *this_dbs_info)
 		j_dbs_info->prev_cpu_iowait = cur_iowait_time;
 
 		if (dbs_tuners_ins.ignore_nice) {
-			u64 cur_nice;
+			cputime64_t cur_nice;
 			unsigned long cur_nice_jiffies;
 
-			cur_nice = kcpustat_cpu(j).cpustat[CPUTIME_NICE] -
-						 j_dbs_info->prev_cpu_nice;
+			cur_nice = cputime64_sub(kstat_cpu(j).cpustat.nice,
+						 j_dbs_info->prev_cpu_nice);
 			/*
 			 * Assumption: nice time between sampling periods will
 			 * be less than 2^32 jiffies for 32 bit sys
@@ -1281,7 +1282,7 @@ static void dbs_check_cpu(struct cpufreq_nightmare_cpuinfo *this_dbs_info)
 			cur_nice_jiffies = (unsigned long)
 				cputime64_to_jiffies64(cur_nice);
 
-			j_dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+			j_dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat.nice;
 			idle_time += jiffies_to_usecs(cur_nice_jiffies);
 		}
 
@@ -1420,7 +1421,7 @@ static inline void dbs_timer_init(struct cpufreq_nightmare_cpuinfo *dbs_info)
 	if (num_online_cpus() > 1)
 		delay -= jiffies % delay;
 
-	INIT_DEFERRABLE_WORK(&dbs_info->work, do_dbs_timer);
+	INIT_DELAYED_WORK_DEFERRABLE(&dbs_info->work, do_dbs_timer);
 	INIT_WORK(&dbs_info->up_work, cpu_up_work);
 	INIT_WORK(&dbs_info->down_work, cpu_down_work);
 
@@ -1542,7 +1543,7 @@ static int cpufreq_governor_nightmare(struct cpufreq_policy *policy,
 				&j_dbs_info->prev_cpu_wall);
 			if (dbs_tuners_ins.ignore_nice)
 				j_dbs_info->prev_cpu_nice =
-					kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+					kstat_cpu(j).cpustat.nice;
 		}
 		this_dbs_info->cpu = cpu;
 		this_dbs_info->avg_rate_mult = 20;
