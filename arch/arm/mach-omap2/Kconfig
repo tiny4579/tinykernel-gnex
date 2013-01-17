@@ -420,29 +420,29 @@ config OMAP_SMARTREFLEX_CUSTOM_SENSOR
 	  Enable support for custom NSensor and PSensor values in the 
 	  voltage definitions used for Smartreflex calibration.
 
-config OMAP_OCFREQ_1400
-	bool "Enable 1.4GHz MPU frequency slot"
+config OMAP_OCFREQ_1350
+	bool "Enable 1.35GHz MPU frequency slot"
 	depends on OMAP_OVERRIDE_MPUTRIM && OMAP_SMARTREFLEX_CUSTOM_SENSOR
 	help
-	  Enable the 1.4GHz MPU frequency slot.
+	  Enable the 1.35GHz MPU frequency slot.
 
-config OMAP_OCFREQ_1600
-	bool "Enable 1.6GHz MPU frequency slot"
+config OMAP_OCFREQ_1520
+	bool "Enable 1.52GHz MPU frequency slot"
 	depends on OMAP_OVERRIDE_MPUTRIM && OMAP_SMARTREFLEX_CUSTOM_SENSOR
 	help
-	  Enable the 1.6GHz MPU frequency slot.
+	  Enable the 1.52GHz MPU frequency slot.
 
-config OMAP_OCFREQ_1800
-        bool "Enable 1.8GHz MPU frequency slot"
+config OMAP_OCFREQ_1680
+        bool "Enable 1.68GHz MPU frequency slot"
         depends on OMAP_OVERRIDE_MPUTRIM && OMAP_SMARTREFLEX_CUSTOM_SENSOR
         help
-          Enable the 1.8GHz MPU frequency slot.
+          Enable the 1.68GHz MPU frequency slot.
 
-config OMAP_OCFREQ_2000
-        bool "Enable 2.0GHz MPU frequency slot"
+config OMAP_OCFREQ_1850
+        bool "Enable 1.85GHz MPU frequency slot"
         depends on OMAP_OVERRIDE_MPUTRIM && OMAP_SMARTREFLEX_CUSTOM_SENSOR
         help
-          Enable the 2.0GHz MPU frequency slot.
+          Enable the 1.85GHz MPU frequency slot.
 
 endmenu
 
