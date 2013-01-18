@@ -342,7 +342,7 @@ static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
 
 	cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
 
-#if defined(CONFIG_OMAP_UCFREQ_180_230)
+#if defined(CONFIG_OMAP_UCFREQ_230)
 	policy->min = 350000;
 #else
 	policy->min = policy->cpuinfo.min_freq;

@@ -420,11 +420,11 @@ config OMAP_SMARTREFLEX_CUSTOM_SENSOR
 	  Enable support for custom NSensor and PSensor values in the 
 	  voltage definitions used for Smartreflex calibration.
 
-config OMAP_UCFREQ_180_230
-	bool "Enable 180MHz and 230Mhz MPU frequency slots"
+config OMAP_UCFREQ_230
+	bool "Enable 230Mhz MPU frequency slot"
 	depends on OMAP_SMARTREFLEX_CUSTOM_SENSOR
 	help
-	  Enable the 180MHz and 230Mhz MPU frequency slots.
+	  Enable the 230Mhz MPU frequency slot.
 
 config OMAP_OCFREQ_1350
 	bool "Enable 1.35GHz MPU frequency slot"
