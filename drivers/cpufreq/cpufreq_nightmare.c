@@ -538,57 +538,45 @@ static ssize_t store_##file_name##_##num_core##_##up_down		\
 
 show_hotplug_param(hotplug_freq, 1, 1);
 show_hotplug_param(hotplug_freq, 2, 0);
-#ifndef CONFIG_CPU_EXYNOS4210
 show_hotplug_param(hotplug_freq, 2, 1);
 show_hotplug_param(hotplug_freq, 3, 0);
 show_hotplug_param(hotplug_freq, 3, 1);
 show_hotplug_param(hotplug_freq, 4, 0);
-#endif
 
 show_hotplug_param(hotplug_rq, 1, 1);
 show_hotplug_param(hotplug_rq, 2, 0);
-#ifndef CONFIG_CPU_EXYNOS4210
 show_hotplug_param(hotplug_rq, 2, 1);
 show_hotplug_param(hotplug_rq, 3, 0);
 show_hotplug_param(hotplug_rq, 3, 1);
 show_hotplug_param(hotplug_rq, 4, 0);
-#endif
 
 store_hotplug_param(hotplug_freq, 1, 1);
 store_hotplug_param(hotplug_freq, 2, 0);
-#ifndef CONFIG_CPU_EXYNOS4210
 store_hotplug_param(hotplug_freq, 2, 1);
 store_hotplug_param(hotplug_freq, 3, 0);
 store_hotplug_param(hotplug_freq, 3, 1);
 store_hotplug_param(hotplug_freq, 4, 0);
-#endif
 
 store_hotplug_param(hotplug_rq, 1, 1);
 store_hotplug_param(hotplug_rq, 2, 0);
-#ifndef CONFIG_CPU_EXYNOS4210
 store_hotplug_param(hotplug_rq, 2, 1);
 store_hotplug_param(hotplug_rq, 3, 0);
 store_hotplug_param(hotplug_rq, 3, 1);
 store_hotplug_param(hotplug_rq, 4, 0);
-#endif
 
 define_one_global_rw(hotplug_freq_1_1);
 define_one_global_rw(hotplug_freq_2_0);
-#ifndef CONFIG_CPU_EXYNOS4210
 define_one_global_rw(hotplug_freq_2_1);
 define_one_global_rw(hotplug_freq_3_0);
 define_one_global_rw(hotplug_freq_3_1);
 define_one_global_rw(hotplug_freq_4_0);
-#endif
 
 define_one_global_rw(hotplug_rq_1_1);
 define_one_global_rw(hotplug_rq_2_0);
-#ifndef CONFIG_CPU_EXYNOS4210
 define_one_global_rw(hotplug_rq_2_1);
 define_one_global_rw(hotplug_rq_3_0);
 define_one_global_rw(hotplug_rq_3_1);
 define_one_global_rw(hotplug_rq_4_0);
-#endif
 
 static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
 				   const char *buf, size_t count)
@@ -971,20 +959,16 @@ static struct attribute *dbs_attributes[] = {
 	&dvfs_debug.attr,
 	&hotplug_freq_1_1.attr,
 	&hotplug_freq_2_0.attr,
-#ifndef CONFIG_CPU_EXYNOS4210
 	&hotplug_freq_2_1.attr,
 	&hotplug_freq_3_0.attr,
 	&hotplug_freq_3_1.attr,
 	&hotplug_freq_4_0.attr,
-#endif
 	&hotplug_rq_1_1.attr,
 	&hotplug_rq_2_0.attr,
-#ifndef CONFIG_CPU_EXYNOS4210
 	&hotplug_rq_2_1.attr,
 	&hotplug_rq_3_0.attr,
 	&hotplug_rq_3_1.attr,
 	&hotplug_rq_4_0.attr,
-#endif
 	&inc_cpu_load_at_min_freq.attr,
 	&freq_for_responsiveness.attr,
 	&inc_cpu_load.attr,
