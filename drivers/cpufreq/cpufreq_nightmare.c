@@ -160,18 +160,20 @@ static unsigned int get_nr_run_avg(void)
 #define DEF_UP_NR_CPUS				(1)
 #define DEF_CPU_UP_RATE				(10)
 #define DEF_CPU_DOWN_RATE			(20)
-#define DEF_FREQ_STEP				(30)
+#define DEF_FREQ_STEP				(20)
 
 #define DEF_START_DELAY				(0)
 
 #define FREQ_FOR_RESPONSIVENESS			(400000)
+#define FIRST_CORE_FREQ_LIMIT			(0)
+#define SECOND_CORE_FREQ_LIMIT			(0)
 
 #define HOTPLUG_DOWN_INDEX			(0)
 #define HOTPLUG_UP_INDEX			(1)
 
 /* CPU freq will be increased if measured load > inc_cpu_load;*/
 #define DEF_INC_CPU_LOAD (80)
-#define INC_CPU_LOAD_AT_MIN_FREQ		(40)
+#define INC_CPU_LOAD_AT_MIN_FREQ		(60)
 #define UP_AVG_LOAD						(65u)
 /* CPU freq will be decreased if measured load < dec_cpu_load;*/
 #define DEF_DEC_CPU_LOAD (60)
@@ -274,6 +276,8 @@ static struct dbs_tuners {
 #endif
 	unsigned int inc_cpu_load_at_min_freq;
 	unsigned int freq_for_responsiveness;
+	unsigned int first_core_freq_limit;
+	unsigned int second_core_freq_limit;
 	unsigned int inc_cpu_load;
 	unsigned int dec_cpu_load;
 	unsigned int up_avg_load;
@@ -298,6 +302,8 @@ static struct dbs_tuners {
 #endif
 	.inc_cpu_load_at_min_freq = INC_CPU_LOAD_AT_MIN_FREQ,
 	.freq_for_responsiveness = FREQ_FOR_RESPONSIVENESS,
+	.first_core_freq_limit = FIRST_CORE_FREQ_LIMIT,
+	.second_core_freq_limit = SECOND_CORE_FREQ_LIMIT,
 	.inc_cpu_load = DEF_INC_CPU_LOAD,
 	.dec_cpu_load = DEF_DEC_CPU_LOAD,
 	.up_avg_load = UP_AVG_LOAD,
@@ -501,6 +507,8 @@ show_one(min_cpu_lock, min_cpu_lock);
 show_one(dvfs_debug, dvfs_debug);
 show_one(inc_cpu_load_at_min_freq, inc_cpu_load_at_min_freq);
 show_one(freq_for_responsiveness, freq_for_responsiveness);
+show_one(first_core_freq_limit, first_core_freq_limit);
+show_one(second_core_freq_limit, second_core_freq_limit);
 show_one(inc_cpu_load, inc_cpu_load);
 show_one(dec_cpu_load, dec_cpu_load);
 show_one(up_avg_load, up_avg_load);
@@ -809,6 +817,40 @@ static ssize_t store_freq_for_responsiveness(struct kobject *a, struct attribute
 	return count;
 }
 
+/* first_core_freq_limit */
+static ssize_t store_first_core_freq_limit(struct kobject *a, struct attribute *b,
+				   const char *buf, size_t count)
+{
+	unsigned int input;
+	int ret;
+	ret = sscanf(buf, "%u", &input);
+	if (ret != 1)
+		return -EINVAL;
+
+	if (input > 1228000)	
+		dbs_tuners_ins.first_core_freq_limit = 1228000;
+	else
+		dbs_tuners_ins.first_core_freq_limit = input;
+
+	return count;
+}
+
+/* second_core_freq_limit */
+static ssize_t store_second_core_freq_limit(struct kobject *a, struct attribute *b,
+				   const char *buf, size_t count)
+{
+	unsigned int input;
+	int ret;
+	ret = sscanf(buf, "%u", &input);
+	if (ret != 1)
+		return -EINVAL;
+	if (input > 1228000)	
+		dbs_tuners_ins.second_core_freq_limit = 1228000;
+	else
+		dbs_tuners_ins.second_core_freq_limit = input;
+	return count;
+}
+
 /* inc_cpu_load */
 static ssize_t store_inc_cpu_load(struct kobject *a, struct attribute *b,
 					const char *buf, size_t count)
@@ -932,6 +974,8 @@ define_one_global_rw(hotplug_lock);
 define_one_global_rw(dvfs_debug);
 define_one_global_rw(inc_cpu_load_at_min_freq);
 define_one_global_rw(freq_for_responsiveness);
+define_one_global_rw(first_core_freq_limit);
+define_one_global_rw(second_core_freq_limit);
 define_one_global_rw(inc_cpu_load);
 define_one_global_rw(dec_cpu_load);
 define_one_global_rw(up_avg_load);
@@ -971,6 +1015,8 @@ static struct attribute *dbs_attributes[] = {
 	&hotplug_rq_4_0.attr,
 	&inc_cpu_load_at_min_freq.attr,
 	&freq_for_responsiveness.attr,
+	&first_core_freq_limit.attr,
+	&second_core_freq_limit.attr,
 	&inc_cpu_load.attr,
 	&dec_cpu_load.attr,
 	&up_avg_load.attr,
@@ -1312,6 +1358,9 @@ static void dbs_check_frequency(struct cpufreq_nightmare_cpuinfo *this_dbs_info)
 	unsigned int freq_up = 0;
 	unsigned int dec_load = 0;
 	unsigned int freq_down = 0;
+	unsigned int first_core_freq_limit = dbs_tuners_ins.first_core_freq_limit;
+	unsigned int second_core_freq_limit = dbs_tuners_ins.second_core_freq_limit;
+	unsigned int ccore = 0;
 
 		for_each_online_cpu(j) {
 		struct cpufreq_policy *policy;
@@ -1319,9 +1368,19 @@ static void dbs_check_frequency(struct cpufreq_nightmare_cpuinfo *this_dbs_info)
 
 		load = hotplug_histories->usage[num_hist].load[j];
 
+		ccore++;
+
 		policy = cpufreq_cpu_get(j);
 		if (!policy)
 			continue;
+
+
+		policy->shared_type = CPUFREQ_SHARED_TYPE_ANY;
+		cpumask_setall(policy->related_cpus);
+		cpumask_setall(policy->cpus);
+
+		/* I need to integrate into exynos_cpufreq.c */
+		/*policy->cpu = j;*/
 
 		/* CPUs Online Scale Frequency*/
 		if (policy->cur < dbs_tuners_ins.freq_for_responsiveness)
@@ -1344,7 +1403,17 @@ static void dbs_check_frequency(struct cpufreq_nightmare_cpuinfo *this_dbs_info)
 			if (inc_brake > inc_load) {
 				continue;
 			} else {
-				freq_up = policy->cur + (inc_load - inc_brake);
+				freq_up = policy->cur + (inc_load - inc_brake);\
+			}			
+
+			if (ccore == 1 && first_core_freq_limit > 0) {
+				if (freq_up > first_core_freq_limit) {
+					freq_up = min(first_core_freq_limit,policy->max);
+				}
+			} else if (ccore == 2 && second_core_freq_limit > 0) {
+				if (freq_up > second_core_freq_limit) {
+					freq_up = min(second_core_freq_limit,policy->max);
+				}
 			}
 
 			if (freq_up != policy->cur && freq_up <= policy->max) {
@@ -1365,6 +1434,16 @@ static void dbs_check_frequency(struct cpufreq_nightmare_cpuinfo *this_dbs_info)
 				freq_down = policy->cur - dec_load;
 			} else {
 				freq_down = policy->min;
+			}
+
+			if (ccore == 1 && first_core_freq_limit > 0) {
+				if (freq_down > first_core_freq_limit) {
+					freq_down = max(first_core_freq_limit,policy->min);
+				}
+			} else if (ccore == 2 && second_core_freq_limit > 0) {
+				if (freq_down > second_core_freq_limit) {
+					freq_down = max(second_core_freq_limit,policy->min);
+				}
 			}
 
 			if (freq_down != policy->cur) {
@@ -1485,6 +1564,10 @@ static int cpufreq_governor_nightmare(struct cpufreq_policy *policy,
 		if ((!cpu_online(cpu)) || (!policy->cur))
 			return -EINVAL;
 
+		policy->shared_type = CPUFREQ_SHARED_TYPE_ANY;
+		cpumask_setall(policy->related_cpus);
+		cpumask_setall(policy->cpus);
+
 		dbs_tuners_ins.max_freq = policy->max;
 		dbs_tuners_ins.min_freq = policy->min;
 		hotplug_histories->num_hist = 0;
@@ -1567,15 +1650,38 @@ static int cpufreq_governor_nightmare(struct cpufreq_policy *policy,
 	case CPUFREQ_GOV_LIMITS:
 		mutex_lock(&this_dbs_info->timer_mutex);
 
-		if (policy->max < this_dbs_info->cur_policy->cur)
+		/*if (policy->max < this_dbs_info->cur_policy->cur)
 			__cpufreq_driver_target(this_dbs_info->cur_policy,
 						policy->max,
 						CPUFREQ_RELATION_H);
 		else if (policy->min > this_dbs_info->cur_policy->cur)
 			__cpufreq_driver_target(this_dbs_info->cur_policy,
 						policy->min,
-						CPUFREQ_RELATION_L);
+						CPUFREQ_RELATION_L);*/
 
+		for_each_online_cpu(j) {
+			struct cpufreq_policy *cpu_policy;
+			struct cpufreq_nightmare_cpuinfo *cpu_dbs_info;
+
+			cpu_policy = cpufreq_cpu_get(j);
+			if (!cpu_policy)
+				continue;
+
+			cpu_policy->shared_type = CPUFREQ_SHARED_TYPE_ANY;
+			cpumask_setall(cpu_policy->related_cpus);
+			cpumask_setall(cpu_policy->cpus);
+
+			if (policy->max < cpu_policy->cur)
+				__cpufreq_driver_target(cpu_policy,policy->max,CPUFREQ_RELATION_H);
+			else if (policy->min > cpu_policy->cur)
+				__cpufreq_driver_target(cpu_policy,policy->min,CPUFREQ_RELATION_L);
+
+			cpu_dbs_info = &per_cpu(od_cpu_dbs_info, j);
+			cpu_dbs_info->cur_policy = cpu_policy;
+
+			cpufreq_cpu_put(policy);
+
+		}
 		mutex_unlock(&this_dbs_info->timer_mutex);
 		break;
 	}
