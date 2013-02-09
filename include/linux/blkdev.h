@@ -110,14 +110,10 @@ struct request {
 	 * Three pointers are available for the IO schedulers, if they need
 	 * more they have to dynamically allocate it.  Flush requests are
 	 * never put on the IO scheduler. So let the flush fields share
-	 * space with the elevator data.
+	 * space with the three elevator_private pointers.
 	 */
 	union {
-		struct {
-			struct io_cq		*icq;
-			void			*priv[2];
-		} elv;
-
+		void *elevator_private[3];
 		struct {
 			unsigned int		seq;
 			struct list_head	list;
@@ -353,8 +349,6 @@ struct request_queue
 	unsigned int		rq_timeout;
 	struct timer_list	timeout;
 	struct list_head	timeout_list;
-
-	struct list_head	icq_list;
 
 	struct queue_limits	limits;
 	bool			notified_urgent;
