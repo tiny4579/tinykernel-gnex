@@ -155,8 +155,8 @@ static unsigned int get_nr_run_avg(void)
 #define MIN_SAMPLING_RATE			(10000)
 #define MAX_HOTPLUG_RATE			(40u)
 
-#define DEF_MAX_CPU_LOCK			(598000)
-#define DEF_MIN_CPU_LOCK			(364000)
+#define DEF_MAX_CPU_LOCK			(700000)
+#define DEF_MIN_CPU_LOCK			(350000)
 #define DEF_UP_NR_CPUS				(1)
 #define DEF_CPU_UP_RATE				(10)
 #define DEF_CPU_DOWN_RATE			(20)
@@ -164,7 +164,7 @@ static unsigned int get_nr_run_avg(void)
 
 #define DEF_START_DELAY				(0)
 
-#define FREQ_FOR_RESPONSIVENESS			(400000)
+#define FREQ_FOR_RESPONSIVENESS			(700000)
 #define FIRST_CORE_FREQ_LIMIT			(0)
 #define SECOND_CORE_FREQ_LIMIT			(0)
 
@@ -187,10 +187,10 @@ static int hotplug_rq[4][2] = {
 };
 
 static int hotplug_freq[4][2] = {
-	{0, 598000},
-	{364000, 598000},
-	{364000, 598000},
-	{364000, 0}
+	{0, 700000},
+	{350000, 700000},
+	{350000, 700000},
+	{350000, 0}
 };
 #else
 static int hotplug_rq[4][2] = {
@@ -198,10 +198,10 @@ static int hotplug_rq[4][2] = {
 };
 
 static int hotplug_freq[4][2] = {
-	{0, 598000},
-	{364000, 598000},
-	{364000, 598000},
-	{364000, 0}
+	{0, 700000},
+	{350000, 700000},
+	{350000, 700000},
+	{350000, 0}
 };
 #endif
 
