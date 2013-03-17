@@ -182,6 +182,7 @@ static struct dbs_tuners {
 	.sync_freq = DBS_SYNC_FREQ,
 	.optimal_freq = DBS_OPTIMAL_FREQ,
 	.freq_boost_time = DEFAULT_FREQ_BOOST_TIME,
+	.boostfreq = 1060000,
 #ifdef CONFIG_CPU_FREQ_GOV_INTELLIDEMAND
 	.two_phase_freq = 0,
 #endif
