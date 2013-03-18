@@ -916,7 +916,7 @@ static ssize_t store_boost(struct kobject *kobj, struct attribute *attr,
 
 define_one_global_rw(boost);
 
-extern void boostpulse_relay();
+extern void boostpulse_relay(void);
 
 void ktoonservative_is_active(bool val)
 {
