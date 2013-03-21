@@ -1,9 +1,9 @@
 /*
  * SDIO access interface for drivers - linux specific (pci only)
  *
- * Copyright (C) 1999-2011, Broadcom Corporation
+ * Copyright (C) 1999-2012, Broadcom Corporation
  * 
- *         Unless you and Broadcom execute a separate written software license
+ *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
  * under the terms of the GNU General Public License version 2 (the "GPL"),
  * available at http://www.broadcom.com/licenses/GPLv2.php, with the
@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: bcmsdh_linux.c 352863 2012-08-24 04:48:50Z $
+ * $Id: bcmsdh_linux.c 347638 2012-07-27 11:39:03Z $
  */
 
 /**
@@ -49,6 +49,7 @@ extern void dhdsdio_isr(void * args);
 #include <dhd.h>
 #endif /* defined(OOB_INTR_ONLY) */
 
+
 /**
  * SDIO Host Controller info
  */
@@ -71,7 +72,7 @@ struct bcmsdh_hc {
 	bool oob_irq_enable_flag;
 #if defined(OOB_INTR_ONLY)
 	spinlock_t irq_lock;
-#endif
+#endif /* defined(OOB_INTR_ONLY) */
 };
 static bcmsdh_hc_t *sdhcinfo = NULL;
 
@@ -144,11 +145,11 @@ EXPORT_SYMBOL(bcmsdh_remove);
 /* forward declarations */
 static int __devinit bcmsdh_probe(struct device *dev);
 static int __devexit bcmsdh_remove(struct device *dev);
-#endif /* BCMLXSDMMC */
+#endif /* defined(BCMLXSDMMC) */
 
-#ifndef BCMLXSDMMC
+#if !defined(BCMLXSDMMC)
 static
-#endif /* BCMLXSDMMC */
+#endif /* !defined(BCMLXSDMMC) */
 int bcmsdh_probe(struct device *dev)
 {
 	osl_t *osh = NULL;
@@ -158,7 +159,7 @@ int bcmsdh_probe(struct device *dev)
 #if !defined(BCMLXSDMMC) && defined(BCMPLATFORM_BUS)
 	struct platform_device *pdev;
 	struct resource *r;
-#endif /* BCMLXSDMMC */
+#endif /* !defined(BCMLXSDMMC) && defined(BCMPLATFORM_BUS) */
 	int irq = 0;
 	uint32 vendevid;
 	unsigned long irq_flags = 0;
@@ -169,7 +170,7 @@ int bcmsdh_probe(struct device *dev)
 	irq = platform_get_irq(pdev, 0);
 	if (!r || irq == NO_IRQ)
 		return -ENXIO;
-#endif /* BCMLXSDMMC */
+#endif /* !defined(BCMLXSDMMC) && defined(BCMPLATFORM_BUS) */
 
 #if defined(OOB_INTR_ONLY)
 #ifdef HW_OOB
@@ -202,7 +203,7 @@ int bcmsdh_probe(struct device *dev)
 
 	sdhc->dev = (void *)dev;
 
-#ifdef BCMLXSDMMC
+#if defined(BCMLXSDMMC)
 	if (!(sdh = bcmsdh_attach(osh, (void *)0,
 	                          (void **)&regs, irq))) {
 		SDLX_MSG(("%s: bcmsdh_attach failed\n", __FUNCTION__));
@@ -214,7 +215,7 @@ int bcmsdh_probe(struct device *dev)
 		SDLX_MSG(("%s: bcmsdh_attach failed\n", __FUNCTION__));
 		goto err;
 	}
-#endif /* BCMLXSDMMC */
+#endif /* defined(BCMLXSDMMC) */
 	sdhc->sdh = sdh;
 	sdhc->oob_irq = irq;
 	sdhc->oob_flags = irq_flags;
@@ -222,7 +223,7 @@ int bcmsdh_probe(struct device *dev)
 	sdhc->oob_irq_enable_flag = FALSE;
 #if defined(OOB_INTR_ONLY)
 	spin_lock_init(&sdhc->irq_lock);
-#endif
+#endif /* defined(BCMLXSDMMC) */
 
 	/* chain SDIO Host Controller info together */
 	sdhc->next = sdhcinfo;
@@ -252,9 +253,9 @@ err:
 	return -ENODEV;
 }
 
-#ifndef BCMLXSDMMC
+#if !defined(BCMLXSDMMC)
 static
-#endif /* BCMLXSDMMC */
+#endif /* !defined(BCMLXSDMMC) */
 int bcmsdh_remove(struct device *dev)
 {
 	bcmsdh_hc_t *sdhc, *prev;
@@ -404,10 +405,6 @@ bcmsdh_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	/* match this pci device with what we support */
 	/* we can't solely rely on this to believe it is our SDIO Host Controller! */
 	if (!bcmsdh_chipmatch(pdev->vendor, pdev->device)) {
-		if (pdev->vendor == VENDOR_BROADCOM) {
-			SDLX_MSG(("%s: Unknown Broadcom device (vendor: %#x, device: %#x).\n",
-				__FUNCTION__, pdev->vendor, pdev->device));
-		}
 		return -ENODEV;
 	}
 
@@ -516,6 +513,21 @@ bcmsdh_pci_remove(struct pci_dev *pdev)
 
 extern int sdio_function_init(void);
 
+extern int sdio_func_reg_notify(void* semaphore);
+extern void sdio_func_unreg_notify(void);
+
+#if defined(BCMLXSDMMC)
+int bcmsdh_reg_sdio_notify(void* semaphore)
+{
+	return sdio_func_reg_notify(semaphore);
+}
+
+void bcmsdh_unreg_sdio_notify(void)
+{
+	sdio_func_unreg_notify();
+}
+#endif /* defined(BCMLXSDMMC) */
+
 int
 bcmsdh_register(bcmsdh_driver_t *driver)
 {
@@ -616,7 +628,9 @@ int bcmsdh_register_oob_intr(void * dhdp)
 		if (error)
 			return -ENODEV;
 
-		enable_irq_wake(sdhcinfo->oob_irq);
+		error = enable_irq_wake(sdhcinfo->oob_irq);
+		if (error)
+			SDLX_MSG(("%s enable_irq_wake error=%d \n", __FUNCTION__, error));
 		sdhcinfo->oob_irq_registered = TRUE;
 		sdhcinfo->oob_irq_enable_flag = TRUE;
 	}
