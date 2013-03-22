@@ -53,7 +53,7 @@
 #define MIN_SAMPLING_RATE_RATIO			(2)
 
 static unsigned int min_sampling_rate;
-static unsigned int stored_sampling_rate;
+static unsigned int stored_sampling_rate = 45000;
 static unsigned int Lcpu_down_block_cycles = 0;
 static unsigned int Lcpu_up_block_cycles = 0;
 static bool boostpulse_relayf = false;
