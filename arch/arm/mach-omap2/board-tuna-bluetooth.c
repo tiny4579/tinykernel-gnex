@@ -260,7 +260,6 @@ static int bcm4330_bluetooth_probe(struct platform_device *pdev)
 	}
 
 	rfkill_set_states(bt_rfkill, true, false);
-	bcm4330_bt_rfkill_set_power(NULL, true);
 
 	ret = bcm_bt_lpm_init(pdev);
 	if (ret) {
