@@ -432,6 +432,12 @@ config OMAP_OCFREQ_1350
 	help
 	  Enable the 1.35GHz MPU frequency slot.
 
+config OMAP_OCFREQ_1440
+	bool "Enable 1.44GHz MPU frequency slot"
+	depends on OMAP_OVERRIDE_MPUTRIM && OMAP_SMARTREFLEX_CUSTOM_SENSOR
+	help
+	  Enable the 1.44GHz MPU frequency slot.	  
+
 config OMAP_OCFREQ_1520
 	bool "Enable 1.52GHz MPU frequency slot"
 	depends on OMAP_OVERRIDE_MPUTRIM && OMAP_SMARTREFLEX_CUSTOM_SENSOR

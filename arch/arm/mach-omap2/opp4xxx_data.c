@@ -188,6 +188,9 @@ static struct omap_opp_def __initdata omap443x_opp_def_list[] = {
 #ifdef CONFIG_OMAP_OCFREQ_1350
 #define OMAP4460_VDD_MPU_OPPNITRO_UV_OC1350	1388000
 #endif
+#ifdef CONFIG_OMAP_OCFREQ_1440
+#define OMAP4460_VDD_MPU_OPPNITRO_UV_OC1440	1392000
+#endif
 #ifdef CONFIG_OMAP_OCFREQ_1520
 #define OMAP4460_VDD_MPU_OPPNITRO_UV_OC1520	1395000
 #endif
@@ -207,6 +210,9 @@ struct omap_volt_data omap446x_vdd_mpu_volt_data[] = {
 	VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPPNITRO_UV, 0, OMAP44XX_CONTROL_FUSE_MPU_OPPNITRO, 0, 0, 0xfa, 0x27, OMAP_ABB_FAST_OPP),
 #ifdef CONFIG_OMAP_OCFREQ_1350
 	VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPPNITRO_UV_OC1350, 0, 0, 2245, 2062, 0xfa, 0x27, OMAP_ABB_FAST_OPP),
+#endif
+	#ifdef CONFIG_OMAP_OCFREQ_1440
+	VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPPNITRO_UV_OC1440, 0, 0, 2365, 2170, 0xfa, 0x27, OMAP_ABB_FAST_OPP),
 #endif
 #ifdef CONFIG_OMAP_OCFREQ_1520
 	VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPPNITRO_UV_OC1520, 0, 0, 2484, 2276, 0xfa, 0x27, OMAP_ABB_FAST_OPP),
@@ -282,6 +288,9 @@ static struct omap_vdd_dep_volt omap446x_vdd_mpu_core_dep_data[] = {
 #ifdef CONFIG_OMAP_OCFREQ_1350
 	{.main_vdd_volt = OMAP4460_VDD_MPU_OPPNITRO_UV_OC1350, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP100_UV},
 #endif
+#ifdef CONFIG_OMAP_OCFREQ_1440
+	{.main_vdd_volt = OMAP4460_VDD_MPU_OPPNITRO_UV_OC1440, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP100_UV},
+#endif
 #ifdef CONFIG_OMAP_OCFREQ_1520
 	{.main_vdd_volt = OMAP4460_VDD_MPU_OPPNITRO_UV_OC1520, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP100_UV},
 #endif
@@ -332,6 +341,9 @@ static struct omap_opp_def __initdata omap446x_opp_def_list[] = {
 	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", false, 1200000000, OMAP4460_VDD_MPU_OPPNITRO_UV),
 #ifdef CONFIG_OMAP_OCFREQ_1350
 	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", false, 1350000000, OMAP4460_VDD_MPU_OPPNITRO_UV_OC1350),
+#endif
+#ifdef CONFIG_OMAP_OCFREQ_1440
+	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", false, 1440000000, OMAP4460_VDD_MPU_OPPNITRO_UV_OC1440),
 #endif
 #ifdef CONFIG_OMAP_OCFREQ_1520
 	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", false, 1520000000, OMAP4460_VDD_MPU_OPPNITRO_UV_OC1520),
@@ -438,6 +450,9 @@ int __init omap4_opp_init(void)
 #ifdef CONFIG_OMAP_OCFREQ_1350
 		omap4_mpu_opp_enable(1350000000);
 #endif
+#ifdef CONFIG_OMAP_OCFREQ_1440
+		omap4_mpu_opp_enable(1440000000);
+#endif		
 #ifdef CONFIG_OMAP_OCFREQ_1520
 		omap4_mpu_opp_enable(1520000000);
 #endif
