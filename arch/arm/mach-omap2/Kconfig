@@ -456,6 +456,14 @@ config OMAP_OCFREQ_1850
         help
           Enable the 1.85GHz MPU frequency slot.
 
+config TUNA_ASRAM
+	bool "Additional Safe RAM of ~50 MB"
+	default n
+	help
+	  If enabled, reclaims 50 MB from the reserved RAM. Reclaming
+	  max 50 MB is safe and makes 1080p camera
+	  functionality working.
+
 endmenu
 
 endif
