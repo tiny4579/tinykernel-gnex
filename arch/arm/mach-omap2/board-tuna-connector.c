@@ -35,6 +35,7 @@
 #include <linux/switch.h>
 #include <linux/wakelock.h>
 #include <plat/usb.h>
+#include <linux/fastchg.h>
 
 #include "mux.h"
 #include "board-tuna.h"
@@ -863,7 +864,7 @@ static void sii9234_connect(bool on, u8 *devcap)
 	int dock = 0;
 
 	if (on) {
-		val = USB_EVENT_VBUS;
+		val = (force_fast_charge == 2) ? USB_EVENT_CHARGER : USB_EVENT_VBUS;
 		if (devcap) {
 			u16 adopter_id =
 				(devcap[MHL_DEVCAP_ADOPTER_ID_H] << 8) |

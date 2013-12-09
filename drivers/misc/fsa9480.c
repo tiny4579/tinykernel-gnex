@@ -36,6 +36,7 @@
 #include <linux/usb/otg_id.h>
 #include <linux/seq_file.h>
 #include <linux/debugfs.h>
+#include <linux/fastchg.h>
 
 #define DEBUG_DUMP_REGISTERS
 
@@ -517,7 +518,10 @@ static int fsa9480_detect_callback(struct otg_id_notifier_block *nb)
 		/* usb peripheral mode */
 		if (!(nb_info->detect_set->mask & FSA9480_DETECT_USB))
 			goto unhandled;
-		_detected(usbsw, FSA9480_DETECT_USB);
+		if (force_fast_charge == 2)
+			_detected(usbsw, FSA9480_DETECT_CHARGER);
+		else
+			_detected(usbsw, FSA9480_DETECT_USB);
 		goto handled;
 	} else if (dev_type & DEV_UART_MASK) {
 		if (!(nb_info->detect_set->mask & FSA9480_DETECT_UART))
